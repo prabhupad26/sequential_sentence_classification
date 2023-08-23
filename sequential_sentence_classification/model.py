@@ -28,7 +28,6 @@ class SeqClassificationModel(Model):
                  additional_feature_size: int = 0,
                  ) -> None:
         super(SeqClassificationModel, self).__init__(vocab)
-
         self.text_field_embedder = text_field_embedder
         self.vocab = vocab
         self.use_sep = use_sep
@@ -94,17 +93,21 @@ class SeqClassificationModel(Model):
         # Output: embedded_sentences
 
         # embedded_sentences: batch_size, num_sentences, sentence_length, embedding_size
+
+        sentences['bert']['token_ids'] = sentences['bert']['token_ids'].squeeze(1)
         embedded_sentences = self.text_field_embedder(sentences)
         mask = get_text_field_mask(sentences, num_wrapping_dims=1).float()
+        embedded_sentences = embedded_sentences.unsqueeze(1)
         batch_size, num_sentences, _, _ = embedded_sentences.size()
 
         if self.use_sep:
             # The following code collects vectors of the SEP tokens from all the examples in the batch,
             # and arrange them in one list. It does the same for the labels and confidences.
             # TODO: replace 103 with '[SEP]'
-            sentences_mask = sentences['bert'] == 103  # mask for all the SEP tokens in the batch
-            embedded_sentences = embedded_sentences[sentences_mask]  # given batch_size x num_sentences_per_example x sent_len x vector_len
+            sentences_mask = sentences['bert']['token_ids'] == 103  # mask for all the SEP tokens in the batch
+            # embedded_sentences = embedded_sentences[sentences_mask]  # given batch_size x num_sentences_per_example x sent_len x vector_len
                                                                         # returns num_sentences_per_batch x vector_len
+            embedded_sentences = embedded_sentences[sentences_mask.unsqueeze(1)]
             assert embedded_sentences.dim() == 2
             num_sentences = embedded_sentences.shape[0]
             # for the rest of the code in this model to work, think of the data we have as one example
@@ -238,8 +241,8 @@ class SeqClassificationModel(Model):
             average_F1 = 0.0
             for name, metric in self.label_f1_metrics.items():
                 metric_val = metric.get_metric(reset)
-                metric_dict[name + 'F'] = metric_val[2]
-                average_F1 += metric_val[2]
+                metric_dict[name + 'F'] = metric_val["f1"]
+                average_F1 += metric_val["f1"]
 
             average_F1 /= len(self.label_f1_metrics.items())
             metric_dict['avgF'] = average_F1

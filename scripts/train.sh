@@ -5,13 +5,13 @@ export PYTORCH_SEED=`expr $SEED / 10`
 export NUMPY_SEED=`expr $PYTORCH_SEED / 10`
 
 # path to bert vocab and weights
-export BERT_VOCAB=https://ai2-s2-research.s3-us-west-2.amazonaws.com/scibert/allennlp_files/scivocab_uncased.vocab
-export BERT_WEIGHTS=https://ai2-s2-research.s3-us-west-2.amazonaws.com/scibert/allennlp_files/scibert_scivocab_uncased.tar.gz
+export BERT_VOCAB=allenai/scibert_scivocab_uncased
+export BERT_WEIGHTS=allenai/scibert_scivocab_uncased
 
 # path to dataset files
-export TRAIN_PATH=data/CSAbstruct/train.jsonl
-export DEV_PATH=data/CSAbstruct/dev.jsonl
-export TEST_PATH=data/CSAbstruct/test.jsonl
+export TRAIN_PATH=/cluster/home/repo/sequential_sentence_classification/data/CSAbstruct/train.jsonl
+export DEV_PATH=/cluster/home/repo/sequential_sentence_classification/data/CSAbstruct/dev.jsonl
+export TEST_PATH=/cluster/home/repo/sequential_sentence_classification/data/CSAbstruct/test.jsonl
 
 # model
 export USE_SEP=true  # true for our model. false for baseline
@@ -33,6 +33,6 @@ export SCI_SUM=false
 export USE_ABSTRACT_SCORES=false
 export SCI_SUM_FAKE_SCORES=false  # use fake scores for testing
 
-CONFIG_FILE=sequential_sentence_classification/config.jsonnet
+CONFIG_FILE=/cluster/home/repo/sequential_sentence_classification/sequential_sentence_classification/config.jsonnet
 
-python -m allennlp.run train $CONFIG_FILE  --include-package sequential_sentence_classification -s $SERIALIZATION_DIR "$@"
+python -m allennlp train $CONFIG_FILE --include-package sequential_sentence_classification -s $SERIALIZATION_DIR "$@"

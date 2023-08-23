@@ -1,3 +1,7 @@
 __pycache__/
 tmp
 .vscode
+
+sequential_sentence_classification.egg-info/
+src/
+tmp_output_dir/

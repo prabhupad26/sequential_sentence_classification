@@ -4,6 +4,7 @@ from typing import Dict, List
 from overrides import overrides
 
 import numpy as np
+from typing import Iterable
 
 from allennlp.data.dataset_readers.dataset_reader import DatasetReader
 from allennlp.common.file_utils import cached_path
@@ -12,9 +13,8 @@ from allennlp.data.instance import Instance
 from allennlp.data.fields.field import Field
 from allennlp.data.fields import TextField, LabelField, ListField, ArrayField, MultiLabelField
 from allennlp.data.token_indexers import TokenIndexer, SingleIdTokenIndexer
-from allennlp.data.tokenizers import WordTokenizer
-from allennlp.data.tokenizers.token import Token
-from allennlp.data.tokenizers.word_splitter import SimpleWordSplitter, WordSplitter, SpacyWordSplitter
+from allennlp.data.tokenizers import SpacyTokenizer
+from allennlp.data.tokenizers import Token
 
 
 @DatasetReader.register("SeqClassificationReader")
@@ -33,20 +33,23 @@ class SeqClassificationReader(DatasetReader):
     def __init__(self,
                  lazy: bool = False,
                  token_indexers: Dict[str, TokenIndexer] = None,
-                 word_splitter: WordSplitter = None,
+                 word_splitter = None,
                  tokenizer: Tokenizer = None,
-                 sent_max_len: int = 100,
+                 sent_max_len: int = 80,
                  max_sent_per_example: int = 20,
                  use_sep: bool = True,
                  sci_sum: bool = False,
                  use_abstract_scores: bool = True,
                  sci_sum_fake_scores: bool = True,
                  predict: bool = False,
+                 **kwargs
                  ) -> None:
-        super().__init__(lazy)
-        self._tokenizer = WordTokenizer(word_splitter=SpacyWordSplitter(pos_tags=False))
+        super().__init__(
+            manual_distributed_sharding=False, manual_multiprocess_sharding=False, **kwargs
+        )
+        self._tokenizer = SpacyTokenizer()
         self._token_indexers = token_indexers or {"tokens": SingleIdTokenIndexer()}
-        self.sent_max_len = sent_max_len
+        self.sent_max_len = int(sent_max_len)
         self.use_sep = use_sep
         self.predict = predict
         self.sci_sum = sci_sum
@@ -55,7 +58,7 @@ class SeqClassificationReader(DatasetReader):
         self.sci_sum_fake_scores = sci_sum_fake_scores
 
     @overrides
-    def _read(self, file_path: str):
+    def _read(self, file_path: str) -> Iterable[Instance]:
         file_path = cached_path(file_path)
 
         with open(file_path) as f:
@@ -173,7 +176,6 @@ class SeqClassificationReader(DatasetReader):
 
         return sentences, labels
 
-    @overrides
     def text_to_instance(self,
                          sentences: List[str],
                          labels: List[str] = None,

@@ -26,6 +26,7 @@ class SeqClassificationModel(Model):
                  bert_dropout: float = 0.1,
                  sci_sum: bool = False,
                  additional_feature_size: int = 0,
+                 model_name: str = None
                  ) -> None:
         super(SeqClassificationModel, self).__init__(vocab)
         self.text_field_embedder = text_field_embedder
@@ -34,6 +35,7 @@ class SeqClassificationModel(Model):
         self.with_crf = with_crf
         self.sci_sum = sci_sum
         self.self_attn = self_attn
+        self.model_name = model_name
         self.additional_feature_size = additional_feature_size
 
         self.dropout = torch.nn.Dropout(p=bert_dropout)
@@ -92,19 +94,26 @@ class SeqClassificationModel(Model):
         # Input: sentences
         # Output: embedded_sentences
 
-        # embedded_sentences: batch_size, num_sentences, sentence_length, embedding_size
-
-        sentences['bert']['token_ids'] = sentences['bert']['token_ids'].squeeze(1)
-        embedded_sentences = self.text_field_embedder(sentences)
         mask = get_text_field_mask(sentences, num_wrapping_dims=1).float()
-        embedded_sentences = embedded_sentences.unsqueeze(1)
+
+        # embedded_sentences: batch_size, num_sentences, sentence_length, embedding_size
+        batch_size, num_sentences, sentence_length = sentences['bert']['token_ids'].size()
+
+        sentences['bert']['token_ids'] = sentences['bert']['token_ids'].view(sentences['bert']['token_ids'].shape[0], -1)
+        sentences['bert']['mask'] = sentences['bert']['mask'].view(sentences['bert']['mask'].shape[0], -1)
+        sentences['bert']['type_ids'] = sentences['bert']['type_ids'].view(sentences['bert']['type_ids'].shape[0], -1)
+        sentences['bert']['segment_concat_mask'] = sentences['bert']['segment_concat_mask'].view(sentences['bert']['segment_concat_mask'].shape[0], -1)
+        
+        embedded_sentences = self.text_field_embedder(sentences)
+        embedded_sentences = embedded_sentences.view(batch_size, num_sentences, sentence_length, embedded_sentences.shape[-1])
         batch_size, num_sentences, _, _ = embedded_sentences.size()
 
         if self.use_sep:
             # The following code collects vectors of the SEP tokens from all the examples in the batch,
             # and arrange them in one list. It does the same for the labels and confidences.
             # TODO: replace 103 with '[SEP]'
-            sentences_mask = sentences['bert']['token_ids'] == 103  # mask for all the SEP tokens in the batch
+            sep_tok_id = 103 if self.model_name == 'allenai/scibert_scivocab_uncased' else 102
+            sentences_mask = sentences['bert']['token_ids'] == sep_tok_id # mask for all the SEP tokens in the batch
             # embedded_sentences = embedded_sentences[sentences_mask]  # given batch_size x num_sentences_per_example x sent_len x vector_len
                                                                         # returns num_sentences_per_batch x vector_len
             embedded_sentences = embedded_sentences[sentences_mask.unsqueeze(1)]

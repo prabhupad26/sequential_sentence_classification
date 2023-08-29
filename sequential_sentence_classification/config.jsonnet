@@ -19,7 +19,7 @@ local lr_value = 5e-5;
     "max_instances": std.parseInt(std.extVar("TRAINING_DATA_INSTANCES")),
     "lazy": false,
     "sent_max_len": std.parseInt(std.extVar("SENT_MAX_LEN")),
-    "word_splitter": "bert-basic",
+    "word_splitter": std.extVar("BERT_VOCAB"),
     "max_sent_per_example": std.parseInt(std.extVar("MAX_SENT_PER_EXAMPLE")),
     "token_indexers": {
           "bert": {
@@ -28,6 +28,11 @@ local lr_value = 5e-5;
               "max_length": 512
           },
     },
+    "tokenizer": {
+            type: "pretrained_transformer",
+            model_name: std.extVar("BERT_VOCAB"),
+            add_special_tokens: false
+        },
     "use_sep": stringToBool(std.extVar("USE_SEP")),
     "sci_sum": stringToBool(std.extVar("SCI_SUM")),
     "use_abstract_scores": stringToBool(std.extVar("USE_ABSTRACT_SCORES")),
@@ -49,6 +54,7 @@ local lr_value = 5e-5;
         }
     },
     "use_sep": stringToBool(std.extVar("USE_SEP")),
+    "model_name": std.extVar("BERT_WEIGHTS"),
     "with_crf": stringToBool(std.extVar("WITH_CRF")),
     "bert_dropout": 0.1,
     "sci_sum": stringToBool(std.extVar("SCI_SUM")),

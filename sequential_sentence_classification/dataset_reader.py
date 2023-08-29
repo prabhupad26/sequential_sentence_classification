@@ -47,7 +47,8 @@ class SeqClassificationReader(DatasetReader):
         super().__init__(
             manual_distributed_sharding=False, manual_multiprocess_sharding=False, **kwargs
         )
-        self._tokenizer = SpacyTokenizer()
+        # self._tokenizer = SpacyTokenizer()
+        self._tokenizer = tokenizer
         self._token_indexers = token_indexers or {"tokens": SingleIdTokenIndexer()}
         self.sent_max_len = int(sent_max_len)
         self.use_sep = use_sep
@@ -190,8 +191,18 @@ class SeqClassificationReader(DatasetReader):
             assert len(sentences) == len(additional_features)
 
         if self.use_sep:
-            tokenized_sentences = [self._tokenizer.tokenize(s)[:self.sent_max_len] + [Token("[SEP]")] for s in sentences]
+            # tokenized_sentences = [self._tokenizer.tokenize(s)[:self.sent_max_len] + [Token("[SEP]")] for s in sentences]
+            
+            # tokenized_sentences = [self._tokenizer.tokenize(s)[:self.sent_max_len] for s in sentences]
+            
+            # sentences = [list(itertools.chain.from_iterable(tokenized_sentences))[:-1]]
+            
+            # tokenized_sentences = [self._tokenizer.tokenize(s)[:self.sent_max_len] + [Token("[SEP]")] for s in sentences]
+            # sentences = [[sentence if sentence != "[SEP]" else [Token("[SEP]")] for sentence in tokenized_sentences]]
+
+            tokenized_sentences = [[Token("[CLS]")]] + [self._tokenizer.tokenize(s)[:self.sent_max_len] + [Token("[SEP]")] for s in sentences]
             sentences = [list(itertools.chain.from_iterable(tokenized_sentences))[:-1]]
+
         else:
             # Tokenize the sentences
             sentences = [
